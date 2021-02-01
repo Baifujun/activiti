@@ -30,17 +30,17 @@ class ActivitiApplicationTests {
     private SecurityUtil securityUtil;
     @Autowired
     private RepositoryService repositoryService;
-    // 变量、附件均在该对象中
     @Autowired
+    // 流程变量，附件均在该对象中
     private TaskService taskService;
 
     // 部署流程
     @Test
     void deployProcess() {
         securityUtil.logInAs("salaboy");
-        Deployment deployment = repositoryService.createDeployment().name("测试流程")
-                .addClasspathResource("test1.bpmn")
-                .addClasspathResource("test1.png")
+        Deployment deployment = repositoryService.createDeployment().name("测试流程3")
+                .addClasspathResource("test3.bpmn")
+                .addClasspathResource("test3.png")
                 .deploy();
         System.out.println("部署的流程信息：" + deployment);
     }
@@ -53,7 +53,7 @@ class ActivitiApplicationTests {
         System.out.println("查询到流程数量：" + processDefinitionPage.getTotalItems());
         List<ProcessDefinition> content = processDefinitionPage.getContent();
         for (ProcessDefinition processDefinition : content) {
-            System.out.println("流程定义信息：" + processDefinition.toString());
+            System.out.println("流程定义信息：" + processDefinition);
         }
     }
 
@@ -63,7 +63,7 @@ class ActivitiApplicationTests {
         securityUtil.logInAs("salaboy");
         ProcessInstance processInstance = processRuntime.start(ProcessPayloadBuilder
                 .start()
-                .withProcessDefinitionId("myProcess:1:7f6d53ce-613e-11eb-9058-d89c6748a88e")
+                .withProcessDefinitionId("myProcess:5:fbf5b2b1-6470-11eb-b5be-d89c6748a88e")
                 .build());
         System.out.println("流程实例信息：" + processInstance);
     }
@@ -72,10 +72,14 @@ class ActivitiApplicationTests {
     @Test
     void selectUncompletedTaskAndComplete() {
         securityUtil.logInAs("salaboy");
-        Page<Task> tasks = taskRuntime.tasks(Pageable.of(0, 10));
+        Page<Task> tasks = taskRuntime.tasks(Pageable.of(0, 100));
         System.out.println("待办任务数量：" + tasks.getTotalItems());
         for (Task task : tasks.getContent()) {
-            taskRuntime.claim(new ClaimTaskPayloadBuilder().withTaskId(task.getId()).build());
+            // 多人任务时需要先拾取任务
+            if (task.getAssignee() == null) {
+                taskRuntime.claim(new ClaimTaskPayloadBuilder().withTaskId(task.getId()).build());
+            }
+            // 完成任务
             taskRuntime.complete(new CompleteTaskPayloadBuilder().withTaskId(task.getId()).build());
             System.out.println("已完成任务：" + task);
         }
